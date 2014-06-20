@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
+    
+    <script>
+        $(document).ready(function () {
+            updateTime();
+        });
+
+        //Problem with user leaving idea update window open need to refresh current time for accurate add
+        function updateTime() {
+            $("#timestamp2").val(new Date($.now()).getTime());
+            setTimeout(updateTime, 1000);
+        }
+    </script>
+</head>
+<body>   
+<div class="content">
+    <form action="databaseTransaction.php" method="POST">
+        <label>Owner: </label>
+        <input name="owner" type="text" size="30" /><br>
+
+        <label>Type: </label><br>
+        <input name="type" type="radio" value="IDEA">Idea<br>
+		<input name="type" type="radio" value="INPROGRESS">Work In Progress<br>
+		<input name="type" type="radio" value="COMPLETED">Completed<br>
+		<input name="type" type="radio" value="NEWS">News Item<br>
+
+        <label>Text: </label>
+        <input name="text" type="text" size="100" /><br>
+
+        <label>Description: </label>
+        <input name="description" type="text" size="120" /><br>
+
+        <label>Timestamp: </label>
+        <input name="timestamp" type="text" size="50" id="timestamp2"><br>
+
+        <input name="mySubmit" type="submit" value="Add Entry" />
+    </form>
+</div>
+
+</body>
+</html>

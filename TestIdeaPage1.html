@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Idea Board</title>
+    <!--<script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>-->
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery-ui-1.10.4.custom.min.js"></script>
+
+    <script>
+        /*
+        Windows Metro Colors
+            Colors:         DARK    LIGHT
+            Teal	        008299	00A0B1
+            Blue	        2672EC	2E8DEF
+            Purple	        8C0095	A700AE
+            Dark Purple	    5133AB	643EBF
+            Red	            AC193D	BF1E4B
+            Orange	        D24726	DC572E
+            Green	        008A00	00A600
+            Sky Blue	    094AB2	0A5BC4
+            JQuitBlue       3399FF
+            DarkGreyText    666666
+            LightGreyBG     D4D4D4
+
+        */
+
+        var TOTAL_COLUMNS = 4;
+        var mCurrentHeader;//So we don't select the same column multiple times.
+        var mSelectedIndex = 0; //The currently selected column index. (left to right).
+        var lastUpdateTime = 0;
+        var lastChildrenCount = 0;
+
+        var headers = [
+            ".headerIdea",
+            ".headerProgress",
+            ".headerCompleted",
+            ".headerNews"
+        ];
+
+        var lists = [
+            "#ideaList",
+            "#inProgressList",
+            "#completedList",
+            "#newsList"
+        ];
+
+        var colors = [
+           "#5133AB",
+           "#2672EC",
+           "#00A0B1",
+           "#008A00",
+
+        ];
+
+        /**
+        * Standard JQuery ready function.
+        */
+        $(document).ready(function () {
+            initialGetXml();
+            setupInput();
+        });
+
+        /**
+        * Adds the mouse interactions such as hover to
+        * the headers and list items.
+        */
+        function setupInput() {
+            $('.headerIdea, .headerProgress, .headerCompleted, .headerNews').on('mouseenter, mouseleave', function (e) {
+
+                //Update cursor
+                $(this).css('cursor', 'pointer');
+                var headerName = "." + $(this).attr('class');
+
+                //Check to see if we are already on this header.
+                if (mCurrentHeader === headerName) return;
+                mCurrentHeader = headerName;
+
+                for (i = 0; i < TOTAL_COLUMNS; i++) {
+                    if (headerName == headers[i]) {
+                        mSelectedIndex = i;
+                        selectColumn(headers[i], colors[i]);
+                    }
+                }
+            });
+        }
+
+        /**
+         * Highlights all the items in the selected column and
+         * greys out the remaining columns.
+         * @param {String} headerClass
+         * @param {String} color
+         */
+        function selectColumn(headerClass, color) {
+            var selectedColumn = 0;
+
+            //Update the header colors
+            $.each(headers, function (index, hc) {
+                var header = $(hc);
+                if (hc === headerClass) {
+                    selectedColumn = index;
+                    header.animate({
+                        backgroundColor: color,
+                        color: "#fff"
+                    }, 100);
+                } else {
+                    header.animate({
+                        backgroundColor: "#D4D4D4",
+                        color: "#666666"
+                    }, 100);
+                }
+            });
+
+            //Update all the colums
+            for (i = 0; i < TOTAL_COLUMNS; i++) {
+                //Grey everything but selected column
+                if (i != selectedColumn) {
+                    var deselectedItems = $(lists[i] + " ul li");
+                    console.log(lists[i]);
+                    console.log(deselectedItems.html());
+                    deselectedItems.each(function (index, li) {
+                        $(li).animate({
+                            backgroundColor: "#D4D4D4",
+                            color: "#666666"
+                        }, 60 + (index * (50 / deselectedItems.length)));
+                    });
+                }
+                else {
+                    //Update the items in the list
+                    var listItems = $(lists[i] + " ul li");
+                    listItems.each(function (index, li) {
+                        $(li).animate({
+                            backgroundColor: colors[selectedColumn],
+                            color: "#fff"
+                        }, 100 + (index * (400 / listItems.length)));//Dividing by the list length will shorten the time depending on the list length
+                    });
+                }
+            }
+        }
+
+        /**
+         * Adds a newly submitted entry to the specified column
+         * @param {String} idea
+         * @param {String} list
+         */
+        function addEntry(idea, list) {
+
+            $('<li>' + idea + '</li>').hide().prependTo('#' + list + ' ul').slideDown('easeInBounce');
+        }
+
+        /**
+        * Grabs the xml data from the server
+        */
+        function initialGetXml() {
+            //Load the XML document
+            $.ajax({
+                type: "GET",
+                url: "data/data.xml",
+                dataType: "xml",
+                success: initialSetupXml
+            });
+
+            //Set next update time to updateXml function which will call itself from now on
+            setTimeout(initialGetXml, 30000);
+        }
+
+        /**
+        * Parses the xml and places it into the correct columns.
+        * @param {String} xml
+        */
+        function initialSetupXml(xml) {
+
+            //Set up variable to check if any items have been deleted. if current <= lastChildren then refresh browser because we have no rollback
+            var currentChildrenCount = 0;
+            //Initial setup: Load every item in the XML file
+            $(xml).find("item").each(function () {
+                if (parseFloat($(this).find("timestamp").text()) > lastUpdateTime) {
+                    if ($(this).find("type").text() == 'IDEA') {
+                        addEntry("<b>" + ($(this).find("text").text()) + "</b>" + "<br />" + "Owner: " + ($(this).find("owner").text()) + "<br />" + "Date Added: " + ($(this).find("timestamp").text()), 'ideaList');
+                    }
+                    else if ($(this).find("type").text() == 'INPROGRESS') {
+                        addEntry("<b>" + ($(this).find("text").text()) + "</b>" + "<br />" + "Owner: " + ($(this).find("owner").text()) + "<br />" + "Date Added: " + ($(this).find("timestamp").text()), 'inProgressList');
+                    }
+                    else if ($(this).find("type").text() == 'COMPLETED') {
+                        addEntry("<b>" + ($(this).find("text").text()) + "</b>" + "<br />" + "Owner: " + ($(this).find("owner").text()) + "<br />" + "Date Added: " + ($(this).find("timestamp").text()), 'completedList');
+                    }
+                    else if ($(this).find("type").text() == 'NEWS') {
+                        addEntry("<b>" + ($(this).find("text").text()) + "</b>" + "<br />" + "Date Added: " + ($(this).find("timestamp").text()), 'newsList');
+                    }
+                }
+                currentChildrenCount++;
+            });
+            lastUpdateTime = (new Date($.now()).getTime());
+
+            if (currentChildrenCount < lastChildrenCount) {
+                //In the event that current is less than last it means items have been removed so reload page
+                //Refresh the page
+                alert("ITEMS REMOVED");
+                location.reload();
+            }
+            else {
+                //Make the current count equal to last count (in the event that no elements added or some elements added)
+                lastChildrenCount = currentChildrenCount;
+            }
+        }
+    </script>
+
+    <style media="screen" type="text/css">
+        /* <!-- */
+        body {
+            margin: 10px;
+            padding: 0;
+            font: 13px 'Open Sans', "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+            background-image: url("background.jpg");
+        }
+
+        #insideBullet li {
+            background-color: #3399FF;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 2px;
+            color: #666666;
+            font-family: "Segoe UI","Times New Roman", Times, serif;
+        }
+
+        #insideBullet {
+            padding-left: 0px;
+        }
+
+        #ideaList li {
+            color: #fff;
+            background-color: #5133AB;
+        }
+
+        #inProgressList li {
+            background-color: #D4D4D4;
+        }
+
+        #completedList li {
+            background-color: #D4D4D4;
+        }
+
+        #newsList li {
+            background-color: #D4D4D4;
+        }
+
+        #insideBullet {
+            list-style-type: none;
+        }
+
+        #shiftheader {
+            -webkit-user-select: none; /* Chrome/Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+ */
+            /* Rules below not implemented in browsers yet */
+            -o-user-select: none;
+            user-select: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-align: center;
+            font-family: "Segoe UI","Times New Roman", Times, serif;
+            padding-bottom: 3px;
+        }
+
+        .headerIdea {
+            background-color: #5133AB;
+            color: #fff;
+        }
+
+        .headerProgress {
+            background-color: #D4D4D4;
+            color: #666666;
+        }
+
+        .headerCompleted {
+            background-color: #D4D4D4;
+            color: #666666;
+        }
+
+        .headerNews {
+            background-color: #D4D4D4;
+            color: #666666;
+        }
+
+        #header h1,
+        #header h2,
+        #header p {
+            margin-left: 2%;
+            padding-right: 2%;
+        }
+
+        #active2 #tab2,
+        #active3 #tab3,
+        #active4 #tab4,
+        #active5 #tab5 {
+            font-weight: bold;
+            text-decoration: none;
+            color: #000;
+        }
+
+        #shiftheader {
+            /* padding-left: 70px;*/
+        }
+
+        #footer {
+            clear: both;
+            float: left;
+            width: 100%;
+        }
+
+            #footer p {
+                margin-left: 2%;
+                padding-right: 2%;
+            }
+
+        /* Start of Column CSS */
+        #container4 {
+            clear: left;
+            float: left;
+            width: 100%;
+            overflow: hidden;
+            height: 900px;
+            min-width: 700px;
+            background: #fff; /* column 4 background colour */
+        }
+
+        #container3 {
+            clear: left;
+            float: left;
+            width: 100%;
+            position: relative;
+            right: 25%;
+            height: 900px;
+            background: #fff; /* column 3 background colour */
+        }
+
+        #container2 {
+            clear: left;
+            float: left;
+            width: 100%;
+            position: relative;
+            right: 25%;
+            height: 900px;
+            background: #fff; /* column 2 background colour */
+        }
+
+        #container1 {
+            float: left;
+            width: 100%;
+            position: relative;
+            right: 25%;
+            height: 900px;
+            background: #fff; /* column 1 background colour */
+        }
+
+        #col1 {
+            float: left;
+            width: 21%;
+            position: relative;
+            left: 75%;
+            border-color: #2672EC;
+            overflow: hidden;
+        }
+
+        #col2 {
+            float: left;
+            width: 21%;
+            position: relative;
+            left: 79%;
+            overflow: hidden;
+        }
+
+        #col3 {
+            float: left;
+            width: 21%;
+            position: relative;
+            left: 83%;
+            overflow: hidden;
+        }
+
+        #col4 {
+            float: left;
+            width: 21%;
+            position: relative;
+            left: 87%;
+            overflow: hidden;
+        }
+
+        #col1 {
+            float: left;
+            width: 21%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #col2 {
+            float: left;
+            width: 21%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #col3 {
+            float: left;
+            width: 21%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #col4 {
+            float: left;
+            width: 21%;
+            position: relative;
+            left: 87%;
+            overflow: hidden;
+        }
+
+        /* --> */
+    </style>
+</head>
+<body id="active4">
+    <div id="container4">
+        <div id="container3">
+            <div id="container2">
+                <div id="container1">
+                    <div id="col1">
+                        <h2 id="shiftheader" class="headerIdea">Ideas</h2>
+                        <!-- Column one start -->
+                        <!-- Start of Ideas List -->
+                        <div id="ideaList">
+                            <ul id="insideBullet"></ul>
+                            <div id="weather"></div>
+                        </div>
+                        <!-- Column one end -->
+                    </div>
+                    <div id="col2">
+                        <h2 id="shiftheader" class="headerProgress">In Progress</h2>
+                        <!-- Column two start -->
+                        <!-- Start of Work in Progress List -->
+                        <div id="inProgressList">
+                            <ul id="insideBullet"></ul>
+                        </div>
+                        <!-- Column two end -->
+                    </div>
+                    <div id="col3">
+                        <h2 id="shiftheader" class="headerCompleted">Completed</h2>
+                        <!-- Column three start -->
+                        <!--Start of Completed List-->
+                        <div id="completedList">
+                            <ul id="insideBullet"></ul>
+                        </div>
+
+                        <!-- Column three end -->
+                    </div>
+                    <div id="col4">
+                        <h2 id="shiftheader" class="headerNews">Company News</h2>
+                        <!-- Column four start -->
+                        <!--<div id="digiclock"></div>-->
+                        <div id="newsList">
+                            <ul id="insideBullet"></ul>
+                        </div>
+                        <!-- Column four end -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+    <button id="addColumnOne" onclick="addEntry('Test Add Idea Entry', 'ideaList')">Test Add Idea Entry</button>
+    <button id="addColumnTwo" onclick="addEntry('Test Add Work in Progress Entry', 'inProgressList')">Test Add Work In Progress Entry</button>
+    <button id="addColumnThree" onclick="addEntry('Test Add Completed Entry', 'completedList')">Test Add Entry Completed Entry</button>
+
+</body>
+</html>
+<meta charset="utf-8">
+<meta name="generator" content="CoffeeCup HTML Editor (www.coffeecup.com)">
+<meta name="dcterms.created" content="Thu, 12 Jun 2014 17:03:39 GMT">
+<meta name="description" content="">
+<meta name="keywords" content="">
