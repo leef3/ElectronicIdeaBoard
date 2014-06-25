@@ -9,23 +9,23 @@
     <script>
         /*
         Windows Metro Colors
-            Colors:         DARK    LIGHT
-            Teal	        008299	00A0B1
-            Blue	        2672EC	2E8DEF
-            Purple	        8C0095	A700AE
-            Dark Purple	    5133AB	643EBF
-            Red	            AC193D	BF1E4B
-            Orange	        D24726	DC572E
-            Green	        008A00	00A600
-            Sky Blue	    094AB2	0A5BC4
-            JQuitBlue       3399FF
-            DarkGreyText    666666
-            LightGreyBG     D4D4D4
+        Colors:         DARK    LIGHT
+        Teal            008299  00A0B1
+        Blue            2672EC  2E8DEF
+        Purple          8C0095  A700AE
+        Dark Purple     5133AB  643EBF
+        Red             AC193D  BF1E4B
+        Orange          D24726  DC572E
+        Green           008A00  00A600
+        Sky Blue        094AB2  0A5BC4
+        JQuitBlue       3399FF
+        DarkGreyText    666666
+        LightGreyBG     D4D4D4
 
         */
 
         var TOTAL_COLUMNS = 4;
-        var mCurrentHeader;//So we don't select the same column multiple times.
+        var mCurrentHeader; //So we don't select the same column multiple times.
         var mSelectedIndex = 0; //The currently selected column index. (left to right).
         var lastUpdateTime = 0;
         var lastChildrenCount = 0;
@@ -85,11 +85,11 @@
         }
 
         /**
-         * Highlights all the items in the selected column and
-         * greys out the remaining columns.
-         * @param {String} headerClass
-         * @param {String} color
-         */
+        * Highlights all the items in the selected column and
+        * greys out the remaining columns.
+        * @param {String} headerClass
+        * @param {String} color
+        */
         function selectColumn(headerClass, color) {
             var selectedColumn = 0;
 
@@ -131,17 +131,17 @@
                         $(li).animate({
                             backgroundColor: colors[selectedColumn],
                             color: "#fff"
-                        }, 100 + (index * (400 / listItems.length)));//Dividing by the list length will shorten the time depending on the list length
+                        }, 100 + (index * (400 / listItems.length))); //Dividing by the list length will shorten the time depending on the list length
                     });
                 }
             }
         }
 
         /**
-         * Adds a newly submitted entry to the specified column
-         * @param {String} idea
-         * @param {String} list
-         */
+        * Adds a newly submitted entry to the specified column
+        * @param {String} idea
+        * @param {String} list
+        */
         function addEntry(idea, list) {
 
             $('<li>' + idea + '</li>').hide().prependTo('#' + list + ' ul').slideDown('easeInBounce');
@@ -160,7 +160,7 @@
             });
 
             //Set next update time to updateXml function which will call itself from now on
-            setTimeout(initialGetXml, 30000);
+            setTimeout(initialGetXml, 40000);
         }
 
         /**
@@ -168,12 +168,12 @@
         * @param {String} xml
         */
         function initialSetupXml(xml) {
-
             //Set up variable to check if any items have been deleted. if current <= lastChildren then refresh browser because we have no rollback
             var currentChildrenCount = 0;
             //Initial setup: Load every item in the XML file
             $(xml).find("item").each(function () {
                 if (parseFloat($(this).find("timestamp").text()) > lastUpdateTime) {
+                    //alert("NEW ITEM " + $(this).find("timestamp").text() + " vs " + lastUpdateTime);
                     if ($(this).find("type").text() == 'IDEA') {
                         addEntry("<b>" + ($(this).find("text").text()) + "</b>" + "<br />" + "Owner: " + ($(this).find("owner").text()) + "<br />" + "Date Added: " + ($(this).find("timestamp").text()), 'ideaList');
                     }
@@ -464,15 +464,6 @@
             </div>
         </div>
     </div>
-
-
-
-
-
-    <button id="addColumnOne" onclick="addEntry('Test Add Idea Entry', 'ideaList')">Test Add Idea Entry</button>
-    <button id="addColumnTwo" onclick="addEntry('Test Add Work in Progress Entry', 'inProgressList')">Test Add Work In Progress Entry</button>
-    <button id="addColumnThree" onclick="addEntry('Test Add Completed Entry', 'completedList')">Test Add Entry Completed Entry</button>
-
 </body>
 </html>
 <meta charset="utf-8">
